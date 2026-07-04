@@ -1,3 +1,4 @@
+// mongoose allows you to enforce structure like SQL
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
@@ -20,6 +21,7 @@ const commentSchema = new Schema({
         required: true
     }
 }, {
+    // seperate bc its not a field
     timestamps: true
 });
 
@@ -50,11 +52,12 @@ const campsiteSchema = new Schema({
         type: Boolean,
         default: false
     },
+    // commentsSchema without the brackets is saying only 1 comment is allowed
     comments: [commentSchema]
 }, {
     timestamps: true
 });
 
-const Campsite = mongoose.model("Campsite", campsiteSchema);
+// const Campsite = mongoose.model("Campsite", campsiteSchema);
 
-module.exports = Campsite;
+module.exports = mongoose.model("Campsite", campsiteSchema);

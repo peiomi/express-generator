@@ -2,15 +2,16 @@ const express = require("express");
 const Campsite = require("../models/campsite");
 const campsiteRouter = express.Router();
 
+// ROUTE 1
+
 campsiteRouter.route("/")
-// real API's rarely use .all()
 .get((req, res, next) => {
     Campsite.find() // actually queries MongoDB
     .then(campsites => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.json(campsites); 
-        // res.json() serializes value into JSON, set the JSON headers, and send it
+        // res.json() serializes value into JSON, maybe sets the headers???
     })
     .catch(err => next(err));
 })
@@ -18,7 +19,7 @@ campsiteRouter.route("/")
     console.log(req.body);
     // database operation → success handler → error handler → express middleware
     Campsite.create(req.body) // inserts into MongoDB
-    // need error handling bc Mongoose operations return Promises
+    // need then/catch (or await/async) bc Mongoose operations return Promises
     .then(campsite => {
         console.log('Campsite Created ', campsite);
         res.statusCode = 200;
@@ -30,6 +31,7 @@ campsiteRouter.route("/")
 })
 .put((req, res) => {
     res.statusCode = 403;
+    res.setHeader('Content-Type', 'text/plain');
     res.end('PUT operation not supported on /campsites');
 })
 .delete((req, res, next) => {
@@ -43,6 +45,8 @@ campsiteRouter.route("/")
     .catch(err => next(err))
 });
 
+// ROUTE 2
+
 campsiteRouter.route('/:campsiteId')
 .get((req, res, next) => {
     Campsite.findById(req.params.campsiteId)
@@ -55,6 +59,7 @@ campsiteRouter.route('/:campsiteId')
 })
 .post((req, res) => {
     res.statusCode = 403;
+    res.setHeader('Content-Type', 'text/plain');
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`);
 })
 .put((req, res, next) => {
@@ -78,6 +83,8 @@ campsiteRouter.route('/:campsiteId')
     .catch(err => next(err));
 });
 
+// ROUTE 3
+
 campsiteRouter.route("/:campsiteId/comments")
 .get((req, res, next) => {
     Campsite.findById(req.params.campsiteId)
@@ -87,7 +94,7 @@ campsiteRouter.route("/:campsiteId/comments")
             res.setHeader('Content-Type', 'application/json');
             res.json(campsite.comments);
         } else {
-            err = new Error(`Campsite ${req.params.campsiteId} not found`);
+            const err = new Error(`Campsite ${req.params.campsiteId} not found`);
             err.status = 404;
             return next(err);
         }
@@ -120,6 +127,7 @@ campsiteRouter.route("/:campsiteId/comments")
 })
 .put((req, res) => {
     res.statusCode = 403;
+    res.setHeader('Content-Type', 'text/plain');
     res.end(`PUT operation not supported on /campsites/${req.params.campsiteId}/comments`);
 })
 // delete method logic for a collection INSIDE a single object (top level collections use deleteMany)
@@ -131,7 +139,7 @@ campsiteRouter.route("/:campsiteId/comments")
             for (let i = (campsite.comments.length-1); i >= 0; i--) {
                 campsite.comments.id(campsite.comments[i]._id).deleteOne(); // deleteOne() marks a subdoc for removal
             }
-            campsite.save() // actually deletes 
+            campsite.save() // confirms deletion
             .then(campsite => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
@@ -146,6 +154,8 @@ campsiteRouter.route("/:campsiteId/comments")
     })
     .catch(err => next(err));
 });
+
+// ROUTE 4
 
 campsiteRouter.route("/:campsiteId/comments/:commentId")
 .get((req, res, next) => {
@@ -171,6 +181,7 @@ campsiteRouter.route("/:campsiteId/comments/:commentId")
 })
 .post((req, res) => {
     res.statusCode = 403;
+    res.setHeader('Content-Type', 'text/plain');
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}/comments/${req.params.commentId}`);
 })
 .put((req, res, next) => {
@@ -232,7 +243,7 @@ module.exports = campsiteRouter;
 // post is only supported on collection routes bc you cant create an 
 // object inside of an object, you have to create it inside the collection
 
-// put is only support on single object routes bc you cant replace an entire collection
+// put is only supported on single object routes bc you cant replace an entire collection
 // with a single object
 
 // patch is for partial updates to a single object only
