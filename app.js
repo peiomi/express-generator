@@ -4,6 +4,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mongoose = require("mongoose");
+const session = require("express-session");
+const FileStore = require("session-file-store")(session);
 
 const url = 'mongodb://127.0.0.1:27017/nucampsite';
 const connect = mongoose.connect(url, {});
@@ -31,6 +33,54 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// app.use(cookieParser("12345-67890-09876-54321"));
+
+app.use(session({
+  name: "session-id",
+  secret: "12345-67890-09876-54321",
+  saveUninitialized: false,
+  resave: false,
+  store: new FileStore()
+}));
+
+// authentication
+function auth(req, res, next) {
+  console.log(req.session);
+
+  if (!req.session.user) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      const err = new Error("You are not authenticated!");
+      res.setHeader("WWW-Authenticate", "Basic");
+      err.status = 401;
+      return next(err);
+    }
+
+    const auth = Buffer.from(authHeader.split(" ")[1], "base64").toString().split(":");
+    const user = auth[0];
+    const pass = auth[1];
+    if (user === "admin" && pass === "password") {
+      req.session.user = "admin";
+      return next();
+    } else {
+      const err = new Error("You are not authenticated!");
+      res.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      return next(err);
+    }
+
+  } else {
+    if (req.session.user === "admin") {
+      return next();
+    } else {
+      const err = new Error("You are not authenticated!");
+      err.status = 401;
+      return next(err);
+    }
+  }
+}
+app.use(auth);
+
 // routers need to be mounted after express parses json 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -53,42 +103,5 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
-
-app.use(cookieParser("12345-67890-09876-54321"));
-
-// authentication
-function auth(req, res, next) {
-  if (!req.signedCookies.user) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      const err = new Error("You are not authenticated!");
-      res.setHeader("WWW-Authenticate", "Basic");
-      err.status = 401;
-      return next(err);
-    }
-
-    const auth = Buffer.from(authHeader.split(" ")[1], "base64").toString().split(":");
-    const user = auth[0];
-    const pass = auth[1];
-    if (user === "admin" && pass === "password") {
-      return next();
-    } else {
-      const err = new Error("You are not authenticated!");
-      res.setHeader('WWW-Authenticate', 'Basic');
-      err.status = 401;
-      return next(err);
-    }
-
-  } else {
-    if (req.signedCookies.user === "admin") {
-      return next();
-    } else {
-      const err = new Error("You are not authenticated!");
-      err.status = 401;
-      return next(err);
-    }
-  }
-}
-app.use(auth);
 
 module.exports = app;
