@@ -1,6 +1,7 @@
 const express = require("express");
 const Campsite = require("../models/campsite");
 const campsiteRouter = express.Router();
+const authenticate = require("../authenticate");
 
 // ROUTE 1
 
@@ -15,7 +16,7 @@ campsiteRouter.route("/")
     })
     .catch(err => next(err));
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser, (req, res, next) => {
     console.log(req.body);
     // database operation → success handler → error handler → express middleware
     Campsite.create(req.body) // inserts into MongoDB
@@ -29,12 +30,12 @@ campsiteRouter.route("/")
     .catch(err => next(err)); 
     // next(err) sends error to global error handler in app.js
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.setHeader('Content-Type', 'text/plain');
     res.end('PUT operation not supported on /campsites');
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.deleteMany() // deletes all docs
     // deleteMany is an atomic operation (doesnt need querying, mutating, or save())
     .then(response => {
@@ -57,12 +58,12 @@ campsiteRouter.route('/:campsiteId')
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.setHeader('Content-Type', 'text/plain');
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`);
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
     Campsite.findByIdAndUpdate(req.params.campsiteId, {
         $set: req.body
     }, { new: true })
@@ -73,7 +74,7 @@ campsiteRouter.route('/:campsiteId')
     })
     .catch(err => next(err));
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findByIdAndDelete(req.params.campsiteId)
     .then(response => {
         res.statusCode = 200;
@@ -102,7 +103,7 @@ campsiteRouter.route("/:campsiteId/comments")
     .catch(err => next(err));
 })
 // dont accidentally duplicate ids in postman
-.post((req, res, next) => {
+.post(authenticate.verifyUser, (req, res, next) => {
     // 1. load document from DB
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
@@ -125,13 +126,13 @@ campsiteRouter.route("/:campsiteId/comments")
     })
     .catch(err => next(err));
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.setHeader('Content-Type', 'text/plain');
     res.end(`PUT operation not supported on /campsites/${req.params.campsiteId}/comments`);
 })
 // delete method logic for a collection INSIDE a single object (top level collections use deleteMany)
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
         if (campsite) {
@@ -179,12 +180,12 @@ campsiteRouter.route("/:campsiteId/comments/:commentId")
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.setHeader('Content-Type', 'text/plain');
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}/comments/${req.params.commentId}`);
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
         if (campsite && campsite.comments.id(req.params.commentId)) {
@@ -213,7 +214,7 @@ campsiteRouter.route("/:campsiteId/comments/:commentId")
     })
     .catch(err => next(err));
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
         if (campsite && campsite.comments.id(req.params.commentId)) {
