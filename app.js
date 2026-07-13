@@ -37,8 +37,6 @@ app.use(passport.initialize());
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
-
-
 // routers need to be mounted after express parses json && b4 404
 app.use('/campsites', campsiteRouter);
 app.use('/promotions', promotionRouter);
