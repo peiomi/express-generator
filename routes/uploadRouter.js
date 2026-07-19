@@ -27,7 +27,7 @@ uploadRouter.route("/")
     res.statusCode = 403;
     res.end("GET operation not supported on /imageUpload");
 })
-.post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res) => {
+.post(authenticate.verifyUser, authenticate.verifyAdmin, upload.single("imageFile"), (req, res) => {
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json");
     res.json(req.file);
